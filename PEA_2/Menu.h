@@ -16,12 +16,15 @@ private:
 	Graph *g;
 
 	void ReadFromFile();
+	bool ReadFromFile(std::string);
 	void GenerateRandomly();
 	void GenerateRandomly(int, int, int);
 	void DisplayData();
 	void TimeMeasure();
 	void SetStopCondition();
+	void SetTemperatureRatio();
 	void DisplayTabuSearch();
+	void DisplaySimulatedAnnealing();
 
 public:
 	Menu(int optToQuit = 0);

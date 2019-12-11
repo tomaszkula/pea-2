@@ -16,8 +16,10 @@ void Menu::Display()
 	std::cout << "[2] Wygeneruj losowo\n";
 	std::cout << "[3] Wyswietl dane\n";
 	std::cout << "[4] Pomiary do sprawozdania\n";
-	std::cout << "[5] Wprowadzenie kryterium stopu(aktualnie : " << Graph::stopCondition << "s)\n";
-	std::cout << "[6] Poszukiwanie z zakazami(Tabu Search)\n";
+	std::cout << "[5] Ustawienie kryterium stopu(aktualnie : " << Graph::stopCondition << "s)\n";
+	std::cout << "[6] Ustawienie wspolczynnika zmiany temperatury(aktualnie : " << Graph::temperatureRatio << "s)\n";
+	std::cout << "[7] Poszukiwanie z zakazami(Tabu Search)\n";
+	std::cout << "[8] Symulowane wyzarzanie(Simulated Annealing)\n";
 	std::cout << "[0] Wyjdz z programu\n";
 }
 
@@ -62,7 +64,15 @@ void Menu::DoTask()
 		break;
 
 	case 6:
+		SetTemperatureRatio();
+		break;
+
+	case 7:
 		DisplayTabuSearch();
+		break;
+
+	case 8:
+		DisplaySimulatedAnnealing();
 		break;
 	}
 
@@ -71,18 +81,32 @@ void Menu::DoTask()
 
 void Menu::ReadFromFile()
 {
+	std::cout << "[Pobieranie danych z pliku .txt lub .atsp]\n";
+
 	std::string fileName = "";
 	std::cout << "Podaj nazwe pliku: ";
 	std::cin >> fileName;
 
+	if (ReadFromFile(fileName))
+	{
+		std::cout << "Poprawnie zaladowano dane z pliku.\n";
+		std::cout << "Ilosc wierzcholkow: " << g->GetNodesCount() << "\n";
+	}
+	else
+	{
+		std::cout << "Podany plik nie istnieje lub zostal zle otworzony!\n";
+	}
+}
+
+bool Menu::ReadFromFile(std::string fileName)
+{
 	std::fstream file;
 	file.open(fileName, std::fstream::in);
 	if (!file.is_open())
 	{
-		std::cout << "Podany plik nie istnieje lub zostal zle otworzony!\n";
-		return;
+		return false;;
 	}
-	
+
 	std::string line;
 	if (fileName.find(".txt") != std::string::npos)
 	{
@@ -108,9 +132,6 @@ void Menu::ReadFromFile()
 				g->CompleteDistancesRow(linesCount - 2, row);
 			}
 		}
-
-		std::cout << "Poprawnie zaladowano dane z pliku TXT.\n";
-		std::cout << "Ilosc wierzcholkow: " << nodesCount << "\n";
 	}
 	else if (fileName.find(".atsp") != std::string::npos)
 	{
@@ -148,8 +169,6 @@ void Menu::ReadFromFile()
 				std::regex reEOF("EOF");
 				if (std::regex_search(line, match, reEOF))
 				{
-					std::cout << "Poprawnie zaladowano dane z pliku ATSP.\n";
-					std::cout << "Ilosc wierzcholkow: " << nodesCount << "\n";
 					break;
 				}
 
@@ -173,13 +192,17 @@ void Menu::ReadFromFile()
 	else
 	{
 		std::cout << "Zly format pliku!\n";
+		return false;
 	}
 
 	file.close();
+	return true;
 }
 
 void Menu::GenerateRandomly()
 {
+	std::cout << "[Generowanie losowych danych]\n";
+
 	int n;
 	std::cout << "Podaj ilosc miast(wierzcholkow): ";
 	std::cin >> n;
@@ -218,20 +241,9 @@ void Menu::GenerateRandomly(int n, int a, int b)
 	}
 }
 
-void Menu::SetStopCondition()
-{
-	std::cout << "[Ustawienie warunku zakonczenia algorytmow]\n";
-
-	double stopTime;
-	std::cout << "Podaj czas stopu[s]: ";
-	std::cin >> stopTime;
-	Graph::stopCondition = stopTime;
-	std::cout << "Algorytm zostanie zakonczony po " << stopTime << "s od rozpoczecia.\n";
-}
-
 void Menu::DisplayData()
 {
-	std::cout << "[Aktualne dane]\n";
+	std::cout << "[Wyswietlenie aktualnych danych]\n";
 	if (!g)
 	{
 		std::cout << "Brak danych do wyswietlenia!\n";
@@ -243,12 +255,97 @@ void Menu::DisplayData()
 
 void Menu::TimeMeasure()
 {
+	std::cout << "[Masowe wywolanie algorytmow na potrzeby sprawozdania]\n";
 
+	int N = 10;
+
+	if (ReadFromFile("ftv47.atsp")) // PLIK MALY
+	{
+		Graph::stopCondition = 120.0;
+
+		std::cout << "--------------------------------------------------\n";
+		std::cout << "PLIK MALY : czas = " << Graph::stopCondition << "s, ilosc wierzcholkow = " << g->GetNodesCount() << "\n";
+		for (int i = 0; i < N; i++)
+		{
+			std::cout << "Instancja nr " << i + 1 << "\n";
+
+			std::cout << "TABU SEARCH\n";
+			g->TabuSearch();
+
+			std::cout << "SYMULOWANE WYZARZANIE\n";
+			g->SimulatedAnnealing();
+
+			std::cout << "\n";
+		}
+	}
+
+	if (ReadFromFile("ftv170.atsp")) // PLIK SREDNI
+	{
+		Graph::stopCondition = 240.0;
+
+		std::cout << "--------------------------------------------------\n";
+		std::cout << "PLIK SREDNI : czas = " << Graph::stopCondition << "s, ilosc wierzcholkow = " << g->GetNodesCount() << "\n";
+		for (int i = 0; i < N; i++)
+		{
+			std::cout << "Instancja nr " << i + 1 << "\n";
+			
+			std::cout << "TABU SEARCH\n";
+			g->TabuSearch();
+
+			std::cout << "SYMULOWANE WYZARZANIE\n";
+			g->SimulatedAnnealing();
+
+			std::cout << "\n";
+		}
+	}
+
+	if (ReadFromFile("rbg403.atsp")) // PLIK DUZY
+	{
+		Graph::stopCondition = 360.0;
+
+		std::cout << "--------------------------------------------------\n";
+		std::cout << "PLIK DUZY : czas = " << Graph::stopCondition << "s, ilosc wierzcholkow = " << g->GetNodesCount() << "\n";
+		for (int i = 0; i < N; i++)
+		{
+			std::cout << "Instancja nr " << i + 1 << "\n";
+			
+			std::cout << "TABU SEARCH\n";
+			g->TabuSearch();
+
+			std::cout << "SYMULOWANE WYZARZANIE\n";
+			g->SimulatedAnnealing();
+
+			std::cout << "\n";
+		}
+	}
+}
+
+void Menu::SetStopCondition()
+{
+	std::cout << "[Ustawienie warunku zakonczenia algorytmow]\n";
+
+	double stopTime;
+	std::cout << "Podaj czas stopu[s]: ";
+	std::cin >> stopTime;
+	Graph::stopCondition = stopTime;
+	std::cout << "Algorytm zostanie zakonczony po " << stopTime << "s od rozpoczecia.\n";
+}
+
+void Menu::SetTemperatureRatio()
+{
+	std::cout << "[Ustawienie wspolczynnika zmiany temperatury]\n";
+
+	double ratio;
+	std::cout << "Podaj wspolczynnik (0.0 - 1.0): ";
+	std::cin >> ratio;
+	Graph::temperatureRatio = ratio;
+	std::cout << "Wspolczynnik zmiany temperatury zmieniony na " << ratio << ".\n";
 }
 
 void Menu::DisplayTabuSearch()
 {
 	std::cout << "[Poszukiwanie z zakazami(Tabu Search)]\n";
+
 	if (!g)
 	{
 		std::cout << "Brak danych do uruchomienia algorytmu!\n";
@@ -256,4 +353,17 @@ void Menu::DisplayTabuSearch()
 	}
 
 	g->TabuSearch();
+}
+
+void Menu::DisplaySimulatedAnnealing()
+{
+	std::cout << "[Symulowane wyzarzanie(Simulated Annealing)]\n";
+
+	if (!g)
+	{
+		std::cout << "Brak danych do uruchomienia algorytmu!\n";
+		return;
+	}
+
+	g->SimulatedAnnealing();
 }
