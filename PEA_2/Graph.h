@@ -1,10 +1,11 @@
 #pragma once
 #include "Clock.h"
+#include "Individual.h"
 
 #include <iostream>
 #include <string>
 #include <vector>
-#include <time.h>
+#include <algorithm>
 
 class Graph
 {
@@ -23,6 +24,10 @@ private:
 public:
 	static double stopCondition;
 	static double temperatureRatio;
+	static int populationSize;
+	static double crossOverRatio;
+	static double mutationRatio;
+	static int crossOverMethod;
 
 	Graph(int nodesCount);
 	~Graph();
@@ -31,5 +36,6 @@ public:
 	void Display();
 	void TabuSearch();
 	void SimulatedAnnealing();
+	void GeneticAlgorithm();
 };
 

@@ -2,6 +2,10 @@
 
 double Graph::stopCondition = 120.0;
 double Graph::temperatureRatio = 0.999999;
+int Graph::populationSize = 100;
+double Graph::crossOverRatio = 0.9;
+double Graph::mutationRatio = 0.1;
+int Graph::crossOverMethod = 1;
 
 Graph::Graph(int nodesCount)
 {
@@ -167,7 +171,6 @@ void Graph::SimulatedAnnealing()
 	c.startCounter();
 	double bestTime = 0.0;
 
-	srand(time(NULL));
 	while (c.getCounter() < stopConditionMs)
 	{
 		int i = rand() % (currentPath.size() - 2) + 1;
@@ -224,6 +227,144 @@ void Graph::SimulatedAnnealing()
 	std::cout << "Czas znalezienia rozwiazania: " << bestTime / 1000000.0 << "s\n";
 }
 
+void Graph::GeneticAlgorithm()
+{
+	double stopConditionMs = stopCondition * 1000000.0;
+
+	std::vector<int> minPath;
+	int minDistance = INT_MAX;
+
+	std::vector<Individual> population;
+	for (int i = 0; i < populationSize; i++)
+	{
+		std::vector<int> path = GetRandomPermutation();
+		int distance = GetDistance(path);
+
+		population.push_back(Individual(path, distance));
+	}
+
+	int childrenCount = populationSize * crossOverRatio;
+	int oldPopulationCount = populationSize - childrenCount;
+
+	Clock c; c.startCounter();
+	double bestTime = 0.0;
+	while (c.getCounter() < stopConditionMs)
+	{
+		std::sort(population.begin(), population.end());
+
+		//czesc starej populacji przechodzi do nowej
+		std::vector<Individual> newPopulation;
+		for (int i = 0; i < oldPopulationCount; i++) newPopulation.push_back(population[i]);
+
+		//tworzenie dzieci
+		for (int i = 0; i < childrenCount; i++)
+		{
+			//SELECTION - TOURNAMENT - wybor rodzicow w sposob turniejowy
+			int p1 = rand() % population.size(), p2 = rand() % population.size();
+			int p1_new, p2_new;
+			for (int j = 0; j < 2; j++)
+			{
+				p1_new = rand() % population.size();
+				if (population[p1_new].GetDistance() < population[p1].GetDistance()) p1 = p1_new;
+
+				p2_new = rand() % population.size();
+				if (population[p2_new].GetDistance() < population[p2].GetDistance()) p2 = p2_new;
+			}
+			Individual parent1 = population[p1], parent2 = population[p2];
+
+			//CROSS OVER
+			if (Graph::crossOverMethod == 1)
+			{
+				int crossOverPoint1, crossOverPoint2;
+				do {
+					crossOverPoint1 = rand() % (nodesCount - 1) + 1;
+					crossOverPoint2 = rand() % (nodesCount - 1) + 1;
+				} while (crossOverPoint1 == crossOverPoint2);
+
+				if (crossOverPoint1 > crossOverPoint2)
+				{
+					int temp = crossOverPoint1;
+					crossOverPoint1 = crossOverPoint2;
+					crossOverPoint2 = temp;
+				}
+
+				std::vector<bool> visited(nodesCount + 1, false);
+				int x = 1;
+				for (int j = crossOverPoint1; j <= crossOverPoint2; j++)
+				{
+					visited[parent1.GetPath()[j]] = true;
+					parent1.GetPath()[x] = parent1.GetPath()[j];
+					x++;
+				}
+
+				for (int j = 1; j < nodesCount; j++)
+				{
+					if (!visited[parent2.GetPath()[j]])
+					{
+						visited[parent2.GetPath()[j]] = true;
+						parent1.GetPath()[x] = parent2.GetPath()[j];
+						x++;
+					}
+				}
+			}
+			else
+			{
+				int crossOverPoint = rand() % (nodesCount - 1) + 1;
+
+				std::vector<bool> visited(nodesCount + 1, false);
+				for (int j = 1; j < crossOverPoint; j++) visited[parent1.GetPath()[j]] = true;
+
+				for (int j = 1; j < nodesCount; j++)
+				{
+					if (!visited[parent2.GetPath()[j]])
+					{
+						visited[parent2.GetPath()[j]] = true;
+						parent1.GetPath()[crossOverPoint++] = parent2.GetPath()[j];
+					}
+				}
+			}
+
+			//MUTATION
+			if ((double)rand() / RAND_MAX <= mutationRatio)
+			{
+				int r1, r2;
+				do {
+					r1 = rand() % (nodesCount - 1) + 1;
+					r2 = rand() % (nodesCount - 1) + 1;
+				} while (r1 == r2);
+
+				int temp = parent1.GetPath()[r1];
+				parent1.GetPath()[r1] = parent1.GetPath()[r2];
+				parent1.GetPath()[r2] = temp;
+			}
+
+			parent1.SetDistance(GetDistance(parent1.GetPath()));
+			if (newPopulation.size() > 0 && parent1.GetDistance() < newPopulation[0].GetDistance())
+			{
+				Individual term = newPopulation[0];
+				newPopulation[0] = parent1;
+				newPopulation.push_back(term);
+
+				bestTime = c.getCounter();
+			}
+			else
+			{
+				newPopulation.push_back(parent1);
+			}
+		}
+		population = newPopulation;
+	}
+
+	minPath = population[0].GetPath();
+	minDistance = population[0].GetDistance();
+
+	std::cout << "Najkrotszy dystans(koszt): " << minDistance << "\n";
+	std::cout << "Sciezka: ";
+	for (int i = 0; i < minPath.size() - 1; i++) std::cout << minPath[i] << " --> ";
+	std::cout << minPath[minPath.size() - 1] << "\n";
+	std::cout << "Czas znalezienia rozwiazania: " << bestTime / 1000000.0 << "s\n";
+}
+
 int Graph::GetDistance(std::vector<int> path)
 {
 	int distance = 0;
@@ -236,7 +377,6 @@ int Graph::GetDistance(std::vector<int> path)
 
 std::vector<int> Graph::InitSolution()
 {
-	srand(time(NULL));
 	std::vector<int> path(nodesCount + 1, 0);
 
 	bool *visited = new bool[nodesCount];
@@ -309,7 +449,6 @@ std::vector<int> Graph::GetNearestNeighbor()
 
 std::vector<int> Graph::GetRandomPermutation()
 {
-	srand(time(NULL));
 	std::vector<int> nodes(nodesCount + 1, 0);
 	for (int i = 1; i < nodesCount; i++) nodes[i] = i;
 
@@ -321,7 +460,6 @@ std::vector<int> Graph::GetRandomPermutation()
 		nodes[r] = nodes[i];
 	}
 
-	//for (auto& p : path) std::cout << p << " ";
 	return path;
 }
 

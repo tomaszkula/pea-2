@@ -2,6 +2,8 @@
 
 int main()
 {
+	srand(time(NULL));
+
 	Menu *p = new Menu();
 
 	do {

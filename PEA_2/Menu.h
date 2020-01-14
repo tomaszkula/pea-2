@@ -12,7 +12,7 @@
 class Menu
 {
 private:
-	int opt = 0;
+	char opt = '0';
 	Graph *g;
 
 	void ReadFromFile();
@@ -21,17 +21,23 @@ private:
 	void GenerateRandomly(int, int, int);
 	void DisplayData();
 	void TimeMeasure();
+	void TimeMeasure1();
 	void SetStopCondition();
 	void SetTemperatureRatio();
 	void DisplayTabuSearch();
 	void DisplaySimulatedAnnealing();
+	void SetPopulationSize();
+	void SetCrossOverRatio();
+	void SetMutationRatio();
+	void SetCrossOverMethod();
+	void DisplayGeneticAlgorithm();
 
 public:
-	Menu(int optToQuit = 0);
+	Menu();
 	~Menu();
 
 	void Choose();
-	int GetOption();
+	char GetOption();
 	void Display();
 	void DoTask();
 };
